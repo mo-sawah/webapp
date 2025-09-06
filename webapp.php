@@ -3,7 +3,7 @@
  * Plugin Name: WebAPP
  * Plugin URI: https://sawahsolutions.com/plugins/webapp
  * Description: Transform your WordPress website into a modern Progressive Web App with multiple themes, dark/light modes, and app-like experience. Features 5 beautiful themes, PWA capabilities, offline support, and mobile-first design.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Mohamed Sawah
  * Author URI: https://sawahsolutions.com
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('WEBAPP_VERSION', '1.0.0');
+define('WEBAPP_VERSION', '1.0.1');
 define('WEBAPP_PLUGIN_FILE', __FILE__);
 define('WEBAPP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WEBAPP_PLUGIN_PATH', plugin_dir_path(__FILE__));
@@ -121,24 +121,49 @@ final class WebAPP {
      * Load plugin dependencies
      */
     private function load_dependencies() {
-        // Core classes
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-admin.php';
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-frontend.php';
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-pwa-manager.php';
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-theme-manager.php';
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-install-banner.php';
-        require_once WEBAPP_PLUGIN_PATH . 'includes/class-settings.php';
+        // Core classes - required files
+        $required_files = array(
+            'includes/class-admin.php',
+            'includes/class-frontend.php',
+            'includes/class-pwa-manager.php',
+            'includes/class-theme-manager.php',
+            'includes/class-install-banner.php',
+            'includes/class-settings.php'
+        );
         
-        // Helper functions
-        if (file_exists(WEBAPP_PLUGIN_PATH . 'includes/functions.php')) {
-            require_once WEBAPP_PLUGIN_PATH . 'includes/functions.php';
+        foreach ($required_files as $file) {
+            $file_path = WEBAPP_PLUGIN_PATH . $file;
+            if (file_exists($file_path)) {
+                require_once $file_path;
+            } else {
+                // Log missing core file
+                error_log('WebAPP: Missing required file - ' . $file);
+                
+                // Show admin notice for missing core files
+                add_action('admin_notices', function() use ($file) {
+                    echo '<div class="notice notice-error">';
+                    echo '<p><strong>WebAPP Error:</strong> Missing required file: ' . esc_html($file) . '</p>';
+                    echo '</div>';
+                });
+            }
         }
         
-        // Third-party integrations
-        if (file_exists(WEBAPP_PLUGIN_PATH . 'includes/integrations/')) {
-            $integrations = glob(WEBAPP_PLUGIN_PATH . 'includes/integrations/*.php');
-            foreach ($integrations as $integration) {
-                require_once $integration;
+        // Helper functions - optional
+        $functions_file = WEBAPP_PLUGIN_PATH . 'includes/functions.php';
+        if (file_exists($functions_file)) {
+            require_once $functions_file;
+        }
+        
+        // Third-party integrations - optional
+        $integrations_dir = WEBAPP_PLUGIN_PATH . 'includes/integrations/';
+        if (file_exists($integrations_dir)) {
+            $integrations = glob($integrations_dir . '*.php');
+            if ($integrations) {
+                foreach ($integrations as $integration) {
+                    if (file_exists($integration)) {
+                        require_once $integration;
+                    }
+                }
             }
         }
     }
